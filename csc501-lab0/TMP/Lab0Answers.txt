@@ -1,0 +1,138 @@
+1)Assuming the XINU text begins at address 0x0, draw a rough diagram of XINU's memory layout with addresses derived from your experimental measurements. Include the information you uncovered from running your version of printsegaddress() and printprocstks().
+Answer:
+							
+					|						|
+					|-----------------------| <----- Start (0x00000000)
+					|		Text Segment	|
+					|						|
+					|-----------------------| <----- etext (0x0001cf4c)
+					|		Data Segment	|
+					|						|
+					|-----------------------| <----- edata (0x00021878)
+					|		BSS Segment		|
+					|						|
+					|-----------------------| <----- ebss (0x0002b4d4)
+					|			.			|
+					|			.			|
+					|-----------------------| <----- Process Z's limit (0x00ffaffc)
+					|		Process Z		| <----- Process Z's Stack Pointer (0x00ffbf38)
+					|		Stack			|
+					|-----------------------| <----- Process Z's base (0x00ffbff8)
+					|						|
+					|-----------------------| <----- Process Y's limit (0x00ffbffc)
+					|		Process Y		| <----- Process Y's Stack Pointer (0x00ffcf38)
+					|		Stack			|
+					|-----------------------| <----- Process Y's base (0x00ffcff8)
+					|						|
+					|-----------------------| <----- Process X's limit (0x00ffcffc)
+					|		Process X		| <----- Process X's Stack Pointer (0x00ffdf38)	
+					|		Stack			|
+					|-----------------------| <----- Process X's base(0x00ffdff8)
+					|						|
+					|-----------------------| <----- Main's limit (0x00ffdffc)
+					|		Main's			| <----- Main's Stack Pointer (0x00ffef80)
+					|		Stack			|
+					|-----------------------| <----- Main's base (0x00ffeff8)
+		
+
+2) What is the difference in stack top address before and after calling printtos() ? Draw a diagram to illustrate what are the contents of the items pushed into the stack between these two time points.
+Answer:
+		The top of the stack address just before calling the printtos() function is: 0x00ffefb0
+		The top of the stack address just after calling the printtos() function is: 0x00ffefa8
+		There is a gap of 8 Bytes between the two addresses since the push of new values a) return address(4 bytes) 
+		b) base pointer(4 bytes) onto the stack
+		The below diagram illustrates the above:
+
+
+
+						|	Data of the		|
+						|	calling 		|
+						|	function		|
+						|-------------------| <------------ 0x00ffefb0
+						|					|
+						|		Return 		|
+						|		Address		|
+						|					|
+						|-------------------| <------------ 0x00ffefac
+						|					|
+						|		 EBP		|
+						|					|
+						|					|
+						|-------------------| <------------ 0x00ffefa8
+						|	Data of 		|					 	
+						|	called			|
+						|	function		|
+
+3)Which byte order is adopted in the host machine that we are using ? How did you find out ?
+Answer:
+		The byte order adopted in the host machine is Little-endian. 
+		In Little-endian the lowest significant bytes are placed in the lower addresses.
+		In Big-endian the highest significant bytes are placed in the lower addresses.
+		In the host machine the the lower data bytes are placed in the lower addresses.
+		Example: Input given is 0xabcd, now the least significant byte (cd) will be placed in memory location E then the next higher byte (ab) will be placed in E+1.
+		The below code is helpful to find out which byte order is the host machine
+		Code:
+
+		#include<stdio.h>
+
+		int main(){
+			unsigned int size = 1;
+			char *check = (char*) &size;
+			if(*check == 1){
+				printf("This host machine is Little-endian");
+			}
+			else if(*check == 0){
+				printf("This host machine is Big-endian");
+			}
+ 		}
+
+4)Briefly describe the mov, push, pusha, pop, and popa instructions in the x86
+Answer:	
+		a) MOV instruction:
+			MOV instruction moves the data from the first operand's location to the second operand's location.
+			Syntax: MOV operand1 operand2
+			Here operand1 is the source and operand 2 is destination.
+			Source can be a register, memeory or a constant.
+			destination can be register or memory.
+			Example: mov %esp, %ebp 
+					 we move data from esp to ebp.
+
+		b) PUSH instruction:
+			PUSH instruction places the data specified onto top of the stack in memory.
+			Then decrement the stack pointer, here (esp) is our stack pointer which gets decremented when we insert the data.
+			Example: push eax
+					 push the values in eax register to the top of the stack.
+
+		c) PUSHA instruction:
+			PUSHA pushes the data of all the general purpose registers onto the stack.
+			Register address order: AX, CX, DX, BX, SP, BP, SI, DI - Data is pushed into the stack in this order 
+
+		d) POP instruction:
+			POP instruction removes the data from the top stack and moves it into the operand(destination) specified.
+			Then decrements the stack pointer, here (esp) is our stack pointer which gets incremented when we pop the data.
+			Example: pop eax
+					 pop's the top most element of the stack to the register eax.
+
+		e) POPA instruction:
+			POPA pop's the data of the general purpose registers of the stack.
+			Register address order: DI, SI, BP, SP, BX, DX, CX, AX -  Data is poped in this order
+
+5) In a stack frame, local variables are stored below the top of the stack. In task 3, does your result show all the local variables declared in your printtos function? If not, can you explain that? (hint: try to disable the compiler optimization by specifing -O0 in your Makefile)
+Answer:
+		No, I am unable to see the local variable values below the stack pointer which are declared in printtos().
+		My output of top four stack values:
+					Before[0x00ffefb0]:0x0001d76a
+					After[0x00ffefa8]:0x00ffefec
+        				element[0x00ffef84]:0x00ffef80 <-----(first value below top of the stack)
+        				element[0x00ffef88]:0x00ffef80
+        				element[0x00ffef8c]:0x0002187c
+        				element[0x00ffef90]:0x00000000
+
+        Here I am unable to find values on the top of the stack.
+        In the stack, the bytes below the stack pointer are used for buffers, hence we can never get local variables under the stack pointer.
+        I even checked with compiler optimization turned off there is no change in my stack.
+
+ 			
+
+
+
